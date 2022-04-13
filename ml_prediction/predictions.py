@@ -6,7 +6,7 @@ import pickle
 
 project_root = Path(__file__).resolve().parent
 gpt2_model_dir = project_root / 'mlmodels/bn_gpt2'
-latm_model_dir = project_root / 'mlmodels/bn_lstm'
+latm_model_dir = project_root / 'mlmodels/bn_lstm-2'
 
 MAX_WORDS = 10000
 MAX_SEQUENCE_LENGTH = 200
@@ -58,12 +58,12 @@ def predict_lstm(text: str):
                                                                 padding='pre')
     # predict using model
     predictions = model.predict(input_sequences)
-    ids = np.argsort(predictions, axis=1)[:,-5:] # indices of the top 5 predictions
+    ids = np.argsort(predictions, axis=1)[:,-6:] # indices of the top 5 predictions
     # print next word with score
 
     res = []
 
-    for id in ids[0]:
+    for id in ids[0][0:len(ids[0])-1]:
         # print(tokenizer.index_word[id], "->", predictions[:, id].squeeze())
         res.append(f"{tokenizer.index_word[id]} -> {predictions[:, id].squeeze()}")
 

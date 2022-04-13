@@ -9,7 +9,7 @@ def main():
         ('LSTM', 'GPT2')
     )
 
-    title = st.text_input('Insert Some Bangla Text', 'আমি তোমাকে')
+    title = st.text_input('Insert Some Bangla Text', 'সে একদিন')
     if st.button("Predict"):
         if select_box == 'LSTM':
             res = predict_lstm(title)
