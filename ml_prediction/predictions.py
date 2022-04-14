@@ -1,48 +1,47 @@
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-from transformers import AutoTokenizer, TFGPT2LMHeadModel
+from transformers import AutoTokenizer, TFGPT2LMHeadModel, AutoConfig
 import pickle
 
 project_root = Path(__file__).resolve().parent
 gpt2_model_dir = project_root / 'mlmodels/bn_gpt2'
 latm_model_dir = project_root / 'mlmodels/bn_lstm-2'
 
+tokenizer_dir = gpt2_model_dir / 'tokenizer'
+model_weights_path = gpt2_model_dir / 'gpt2_model_weights.h5'
+
 MAX_WORDS = 10000
 MAX_SEQUENCE_LENGTH = 200
 
-# tokenizer = AutoTokenizer.from_pretrained(gpt2_model_dir)
-# model = TFGPT2LMHeadModel.from_pretrained(str(gpt2_model_dir))
-# # model = tf.keras.models.load_model(gpt2_model_dir)
+def predict_gpt2(text):
+    config = AutoConfig.from_pretrained("flax-community/gpt2-bengali")
 
-# def generate_text(text, model, tokenizer):
-#     input_ids = tokenizer.encode(text, return_tensors='tf')
-#     outputs = model.predict(input_ids).logits
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_dir)
+    model = TFGPT2LMHeadModel.from_pretrained(str(model_weights_path), config=config)
 
-#     print("Next most probable tokens:\n" + 100 * '-')
-#     for i in range(outputs.shape[1]):
-#         pred_id = np.argmax(outputs[:, i, :]).item()
-#         print(tokenizer.decode(pred_id))
+    input_ids = tokenizer.encode(text, return_tensors='tf')
+    outputs = model.predict(input_ids).logits
+
+    beam_outputs = model.generate(
+        input_ids,
+        max_length=100,
+        num_beams=5,
+        no_repeat_ngram_size=2,
+        num_return_sequences=5,
+        early_stopping=True,
+        do_sample=True,
+        top_k=50,
+        top_p=0.95,
+    )
+
+    res = []
+
+    for i, beam_output in enumerate(beam_outputs):
+        res.append("{}".format(tokenizer.decode(
+            beam_output, skip_special_tokens=True)))
     
-#     beam_outputs = model.generate(
-#         input_ids,
-#         max_length=100,
-#         num_beams=5,
-#         no_repeat_ngram_size=2,
-#         num_return_sequences=5,
-#         early_stopping=True,
-#         do_sample=True,
-#         top_k=50,
-#         top_p=0.95,
-#     )
-
-#     print("Beam Output:\n" + 100 * '-')
-#     for i, beam_output in enumerate(beam_outputs):
-#         print("{}: {}".format(i, tokenizer.decode(
-#             beam_output, skip_special_tokens=True)))
-
-# text = input("Enter text: ")
-# generate_text(text, model, tokenizer)
+    return res
 
 
 def predict_lstm(text: str):
