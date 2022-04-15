@@ -3,6 +3,7 @@ import tensorflow as tf
 from pathlib import Path
 from transformers import AutoTokenizer, TFGPT2LMHeadModel, AutoConfig
 import pickle
+import pandas as pd
 
 project_root = Path(__file__).resolve().parent
 gpt2_model_dir = project_root / 'mlmodels/bn_gpt2'
@@ -44,7 +45,7 @@ def predict_gpt2(text):
     return res
 
 
-def predict_lstm(text: str):
+def predict_lstm(text: pd.DataFrame):
     model = tf.keras.models.load_model(str(latm_model_dir))
     with open(str(latm_model_dir / f'tokenizer_{MAX_WORDS}_words.pickle'), 'rb') as f:
         tokenizer = pickle.load(f)
@@ -57,13 +58,20 @@ def predict_lstm(text: str):
                                                                 padding='pre')
     # predict using model
     predictions = model.predict(input_sequences)
-    ids = np.argsort(predictions, axis=1)[:,-6:] # indices of the top 5 predictions
+    ids = np.argsort(predictions, axis=1)[:,-10:] # indices of the top 5 predictions
     # print next word with score
 
-    res = []
+    words = []
+    probs = []
 
-    for id in ids[0][0:len(ids[0])-1]:
+    for id in ids[0]:
         # print(tokenizer.index_word[id], "->", predictions[:, id].squeeze())
-        res.append(f"{tokenizer.index_word[id]} -> {predictions[:, id].squeeze()}")
+        words.append(tokenizer.index_word[id])
+        probs.append(str(predictions[:, id].squeeze()))
 
-    return res
+    if '<oov>' in words:
+        i = words.index('<oov>')
+        words.pop(i)
+        probs.pop(i)
+
+    return pd.DataFrame({'Word': words, 'Probability': probs})
