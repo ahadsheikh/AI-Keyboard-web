@@ -7,19 +7,18 @@ import pandas as pd
 
 project_root = Path(__file__).resolve().parent
 gpt2_model_dir = project_root / 'mlmodels/bn_gpt2'
-latm_model_dir = project_root / 'mlmodels/bn_lstm-2'
+latm_model_dir = project_root / 'mlmodels/bn_lstm'
 
 tokenizer_dir = gpt2_model_dir / 'tokenizer'
 model_weights_path = gpt2_model_dir / 'gpt2_model_weights.h5'
+config_path = gpt2_model_dir / 'config.json'
 
 MAX_WORDS = 10000
 MAX_SEQUENCE_LENGTH = 200
 
 def predict_gpt2(text):
-    config = AutoConfig.from_pretrained("flax-community/gpt2-bengali")
-
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_dir)
-    model = TFGPT2LMHeadModel.from_pretrained(str(model_weights_path), config=config)
+    model = TFGPT2LMHeadModel.from_pretrained(str(model_weights_path), config=str(config_path))
 
     input_ids = tokenizer.encode(text, return_tensors='tf')
     outputs = model.predict(input_ids).logits
@@ -68,6 +67,9 @@ def predict_lstm(text: pd.DataFrame):
         # print(tokenizer.index_word[id], "->", predictions[:, id].squeeze())
         words.append(tokenizer.index_word[id])
         probs.append(str(predictions[:, id].squeeze()))
+
+    words.reverse()
+    probs.reverse()
 
     if '<oov>' in words:
         i = words.index('<oov>')
